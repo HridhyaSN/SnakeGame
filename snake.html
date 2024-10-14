@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+</head>
+<body>
+    
+    <div id="score">0</div>
+    
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+    <script>
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
+
+        // The background 
+        ctx.strokeStyle = "black"; 
+        ctx.lineWidth = 1;  
+        ctx.fillStyle = "white";    
+        ctx.fillRect(0, 0, canvas.width, canvas.height); // Fill the rectangle
+        ctx.strokeRect(0, 0, canvas.width, canvas.height); // Draw the border
+
+        // Snake body definition
+        let snake = [  
+            {x: 150, y: 150},  
+            {x: 140, y: 150},  
+            {x: 130, y: 150},  
+            {x: 120, y: 150},  
+            {x: 110, y: 150}
+        ];
+
+        // Initializing movement speed 
+        let dx = 10;  
+        let dy = 0;   
+
+        // Variables to store food position and score
+        let foodX;
+        let foodY;
+        let score = 0;  
+        let changingDirection = false; // Variable to control direction change
+
+        // Function to generate a random position for food
+        function randomTen(min, max) {
+            return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+        }
+
+        // Function to create food at a random location, ensuring it's not on the snake
+        function createFood() {
+            foodX = randomTen(0, canvas.width - 10);
+            foodY = randomTen(0, canvas.height - 10);
+
+            // Check if food is on the snake
+            snake.forEach(function isFoodOnSnake(part) {
+                const foodIsOnSnake = part.x === foodX && part.y === foodY;
+                if (foodIsOnSnake) { 
+                    createFood();
+                }
+            });
+        }
+
+        // Function to draw the food
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.strokeStyle = 'darkred';
+            ctx.fillRect(foodX, foodY, 10, 10);
+            ctx.strokeRect(foodX, foodY, 10, 10);
+        }
+
+        // Drawing a single part of the snake
+        function drawSnakePart(snakePart) {  
+            ctx.fillStyle = 'lightgreen';  
+            ctx.strokeStyle = 'darkgreen';
+            ctx.fillRect(snakePart.x, snakePart.y, 10, 10);  
+            ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);  
+        }
+
+        // Function to draw the entire snake
+        function drawSnake() {  
+            snake.forEach(drawSnakePart);
+        }
+
+        // Check if the game has ended
+        function didGameEnd() {
+            // Check if snake collides with itself
+            for (let i = 4; i < snake.length; i++) {
+                const didCollide = snake[i].x === snake[0].x && snake[i].y === snake[0].y;
+                if (didCollide) return true; 
+            }
+
+            // Check if snake hits the walls
+            const hitLeftWall = snake[0].x < 0;
+            const hitRightWall = snake[0].x > canvas.width - 10;
+            const hitTopWall = snake[0].y < 0;
+            const hitBottomWall = snake[0].y > canvas.height - 10;
+
+            return hitLeftWall || hitRightWall || hitTopWall || hitBottomWall; 
+        }
+
+        
+        function main() {
+            if (didGameEnd()) {
+                alert("Game Over! Your score: " + score); 
+                return; 
+            }
+
+            setTimeout(function onTick() {
+                changingDirection = false; // Reset changing direction at the beginning of each tick
+                clearCanvas();   
+                drawFood();      
+                advanceSnake();  
+                drawSnake();    
+                main();  // Call main again for continuous movement
+            }, 100);  
+        }
+
+        function advanceSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};  // Move the head based on dx and dy
+            snake.unshift(head);  // Add the new head at the beginning of the snake array
+
+            // Check if the snake's head is at the same position as the food
+            const didEatFood = snake[0].x === foodX && snake[0].y === foodY;
+
+            if (didEatFood) {
+                score += 10;
+                document.getElementById('score').innerHTML = score;  
+                createFood();
+            } else {
+                // If not, remove the tail to keep the snake's length the same
+                snake.pop();
+            }
+        }
+
+        function clearCanvas() {  
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black"; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);  
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);  
+        }
+
+        
+        function changeDirection(event) {
+            const LEFT_KEY = 37;
+            const RIGHT_KEY = 39;
+            const UP_KEY = 38;
+            const DOWN_KEY = 40;
+
+            if (changingDirection) return; // Prevent changing direction if already changing
+
+            changingDirection = true; // Set changing direction to true
+
+            const keyPressed = event.keyCode;
+            const goingUp = dy === -10;
+            const goingDown = dy === 10;
+            const goingRight = dx === 10;
+            const goingLeft = dx === -10;
+
+            if (keyPressed === LEFT_KEY && !goingRight) {
+                dx = -10;
+                dy = 0;
+            }
+            if (keyPressed === UP_KEY && !goingDown) {
+                dx = 0;
+                dy = -10;
+            }
+            if (keyPressed === RIGHT_KEY && !goingLeft) {
+                dx = 10;
+                dy = 0;
+            }
+            if (keyPressed === DOWN_KEY && !goingUp) {
+                dx = 0;
+                dy = 10;
+            }
+        }
+
+        // Start the game
+        createFood();  // Generate the first food
+        main();  // Start the game loop
+
+        document.addEventListener("keydown", changeDirection);
+    </script>
+</body>
+</html>
